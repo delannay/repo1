@@ -33,7 +33,7 @@ typedef unsigned char byte;
 typedef u_int64_t uint64_t;
 #define EXPORTED 
 #define fgm_buffer_t void
-#include "/home/apidis/keemotion/src/libfgt/fgt/apidis.h"
+#include "../keemotion/src/libfgt/fgt/apidis.h"
 
 struct options_t {
     const char *input_file;
@@ -42,7 +42,8 @@ struct options_t {
     const char *m3u8_file;
     char *tmp_m3u8_file;
     const char *url_prefix;
-    const char *named_pipe;
+    const char *named_pipe_out;
+    const char *named_pipe_in;
     long num_segments;
 };
 
@@ -51,6 +52,9 @@ void handler(int signum);
 static AVStream *add_output_stream(AVFormatContext *output_format_context, AVStream *input_stream);
 int write_index_file(const struct options_t, const unsigned int first_segment, const unsigned int last_segment, const int end);
 void display_usage(void);
+char* alloc_videochunk_filename(const struct options_t options);
+int  set_videochunk_filename(char* output_filename,const struct options_t options, int output_index);
+int  rename_videochunk(char* output_filename,const struct options_t options, int output_index,int64_t start, int64_t end);
 
 
 int terminate = 0;
@@ -120,9 +124,37 @@ static AVStream *add_output_stream(AVFormatContext *output_format_context, AVStr
     return output_stream;
 }
 
+char* alloc_videochunk_filename(const struct options_t options)
+{
+  char *s;
+s=malloc(sizeof(char) * (strlen(options.output_prefix) + 100));
+ return s;
+}
+
+int  set_videochunk_filename(char* output_filename,const struct options_t options, int output_index)
+{
+snprintf(output_filename, strlen(options.output_prefix) + 100, "%s-%06u.ts", options.output_prefix, output_index);
+ return 0;
+}
+
+int  rename_videochunk(char* output_filename,const struct options_t options, int output_index,int64_t start, int64_t end)
+{
+  char old_name[500];
+
+  strncpy(old_name,output_filename,500);
+  snprintf(output_filename, strlen(options.output_prefix) + 100, "%s-%06u-%lld-%lld.ts", options.output_prefix, output_index,(long long int)start,(long long int)end);
+ rename(old_name,output_filename);
+
+ return 0;
+
+}
+
+
+
 int write_index_file(const struct options_t options, const unsigned int first_segment, const unsigned int last_segment, const int end) {
     FILE *index_fp;
     char *write_buf;
+    char *output_filename;
     unsigned int i;
 
     index_fp = fopen(options.tmp_m3u8_file, "w");
@@ -131,6 +163,7 @@ int write_index_file(const struct options_t options, const unsigned int first_se
         return -1;
     }
 
+    output_filename = alloc_videochunk_filename(options);
     write_buf = malloc(sizeof(char) * 1024);
     if (!write_buf) {
         fprintf(stderr, "Could not allocate write buffer for index file, index file will be invalid\n");
@@ -152,7 +185,8 @@ int write_index_file(const struct options_t options, const unsigned int first_se
     }
 
     for (i = first_segment; i <= last_segment; i++) {
-        snprintf(write_buf, 1024, "#EXTINF:%lu,\nhttp://%s-%06u.ts\n", options.segment_duration, options.url_prefix, i);
+      set_videochunk_filename(output_filename,options,i);
+        snprintf(write_buf, 1024, "#EXTINF:%lu,\nhttp://%s\n", options.segment_duration, output_filename);
         if (fwrite(write_buf, strlen(write_buf), 1, index_fp) != 1) {
             fprintf(stderr, "Could not write to m3u8 index file, will not continue writing to index file\n");
             free(write_buf);
@@ -224,6 +258,11 @@ int main(int argc, char **argv)
     struct sigaction act;
     int counter;
     FILE* logpipe;
+    FILE* InitialTimestamp_pipe;
+    int64_t init_ts;
+
+
+
     fgt_recording_event_t event;
 
     int opt;
@@ -231,7 +270,7 @@ int main(int argc, char **argv)
     char *endptr;
     struct options_t options; // = {0};
 
-    static const char *optstring = "i:d:p:m:u:n:l:ovh?";
+    static const char *optstring = "i:d:p:m:u:n:l:t:ovh?";
 
     static const struct option longopts[] = {
         { "input",         required_argument, NULL, 'i' },
@@ -240,7 +279,8 @@ int main(int argc, char **argv)
         { "m3u8-file",     required_argument, NULL, 'm' },
         { "url-prefix",    required_argument, NULL, 'u' },
         { "num-segments",  required_argument, NULL, 'n' },
-        { "log",           required_argument, NULL, 'l' },
+        { "log",           optional_argument, NULL, 'l' },
+        { "init-ts",       optional_argument, NULL, 't' },
         { "help",          no_argument,       NULL, 'h' },
         { 0, 0, 0, 0 }
     };
@@ -252,6 +292,7 @@ int main(int argc, char **argv)
     memset(&options, 0 ,sizeof(options));
 
     logpipe=NULL;
+    InitialTimestamp_pipe=NULL;
 
     /* Set some defaults */
     options.segment_duration = 10;
@@ -296,11 +337,16 @@ int main(int argc, char **argv)
                 break;
 
 	    case 'l':
-                options.named_pipe = optarg;
-		mkfifo(options.named_pipe, 0666);
-		logpipe =fopen(options.named_pipe ,"w");
+                options.named_pipe_out = optarg;
+		mkfifo(options.named_pipe_out, 0666);
+		logpipe =fopen(options.named_pipe_out ,"w");
                 break;
 
+	case 't':
+                options.named_pipe_in = optarg;
+		mkfifo(options.named_pipe_in, 0666);
+		InitialTimestamp_pipe =fopen(options.named_pipe_in ,"r");
+                break;
 
             case 'h':
                 display_usage();
@@ -341,7 +387,7 @@ fprintf(stderr,"Into segmenter 2\n");
         exit(1);
     }
 
-    output_filename = malloc(sizeof(char) * (strlen(options.output_prefix) + 15));
+    output_filename = alloc_videochunk_filename(options);
     if (!output_filename) {
         fprintf(stderr, "Could not allocate space for output filenames\n");
         exit(1);
@@ -365,6 +411,17 @@ fprintf(stderr,"Into segmenter 2\n");
         fprintf(stderr, "Could not find MPEG-TS demuxer\n");
         exit(1);
     }
+
+
+    init_ts=0;
+    if (InitialTimestamp_pipe!=NULL)
+      {
+        ret=fread(&init_ts,sizeof(int64_t),1,InitialTimestamp_pipe);
+	printf("Initial TS read : %lld\n",(long long int)init_ts);
+      }
+    
+
+
 fprintf(stderr,"Into segmenter 2.5\n");
     ret = avformat_open_input(&ic, options.input_file, ifmt, NULL);
     if (ret != 0) {
@@ -498,6 +555,8 @@ fprintf(stderr,"Into segmenter 3\n");
 	  avio_flush(oc->pb);
             avio_close(oc->pb);
 
+	    rename_videochunk(output_filename,options,output_index-1,init_ts+prev_segment_time*1000,init_ts+segment_time*1000);
+
 	    if (logpipe)
 	      {
 		int annot_type;
@@ -512,6 +571,7 @@ fprintf(stderr,"Into segmenter 3\n");
 		fflush(logpipe);
 	      }
 
+
             if (options.num_segments && (int)(last_segment - first_segment) >= options.num_segments - 1) {
                 remove_file = 1;
                 first_segment++;
@@ -520,7 +580,7 @@ fprintf(stderr,"Into segmenter 3\n");
                 remove_file = 0;
             }
 
-            if (write_index) {
+            if (write_index && options.num_segments)  {
                 write_index = !write_index_file(options, first_segment, ++last_segment, 0);
             }
 
@@ -530,9 +590,10 @@ fprintf(stderr,"Into segmenter 3\n");
                 remove(remove_filename);
             }
 	    */
-
-            snprintf(output_filename, strlen(options.output_prefix) + 15, "%s-%06u.ts", options.output_prefix, output_index++);
-            if (avio_open(&oc->pb, output_filename, URL_WRONLY) < 0) {
+	    
+	    set_videochunk_filename(output_filename,options, output_index++);
+            
+	    if (avio_open(&oc->pb, output_filename, URL_WRONLY) < 0) {
                 fprintf(stderr, "Could not open '%s'\n", output_filename);
                 break;
             }
@@ -585,7 +646,7 @@ fprintf(stderr,"Into segmenter 3\n");
         remove_file = 0;
     }
 
-    if (write_index) {
+    if (write_index && options.num_segments) {
         write_index_file(options, first_segment, ++last_segment, 1);
     }
 
