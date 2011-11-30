@@ -54,7 +54,7 @@ static AVStream *add_output_stream(AVFormatContext *output_format_context, AVStr
 int write_index_file(const struct options_t, const unsigned int first_segment, const unsigned int last_segment, const int end);
 void display_usage(void);
 char* alloc_videochunk_filename(const struct options_t options);
-int  set_videochunk_filename(char* output_filename,const struct options_t options, int output_index);
+int  set_videochunk_filename(char* output_filename,const char* prefix,int output_index);
 int  rename_videochunk(char* output_filename,const struct options_t options, int output_index,int64_t start, int64_t end);
 
 
@@ -128,13 +128,13 @@ static AVStream *add_output_stream(AVFormatContext *output_format_context, AVStr
 char* alloc_videochunk_filename(const struct options_t options)
 {
   char *s;
-s=malloc(sizeof(char) * (strlen(options.output_prefix) + 100));
+s=malloc(sizeof(char) * (strlen(options.output_prefix)+strlen(options.url_prefix) + 100));
  return s;
 }
 
-int  set_videochunk_filename(char* output_filename,const struct options_t options, int output_index)
+int  set_videochunk_filename(char* output_filename,const char* prefix, int output_index)
 {
-snprintf(output_filename, strlen(options.output_prefix) + 100, "%s-%06u.ts", options.output_prefix, output_index);
+snprintf(output_filename, strlen(prefix) + 100, "%s-%06u.ts",prefix, output_index);
  return 0;
 }
 
@@ -189,7 +189,7 @@ int write_index_file(const struct options_t options, const unsigned int first_se
     }
 
     for (i = first_segment; i <= last_segment; i++) {
-      set_videochunk_filename(output_filename,options,i);
+      set_videochunk_filename(output_filename,options.url_prefix,i);
         snprintf(write_buf, 1024, "#EXTINF:%lu,\nhttp://%s\n", options.segment_duration, output_filename);
         if (fwrite(write_buf, strlen(write_buf), 1, index_fp) != 1) {
             fprintf(stderr, "Could not write to m3u8 index file, will not continue writing to index file\n");
@@ -493,8 +493,8 @@ fprintf(stderr,"Into segmenter 3\n");
       }
     }
 
-
-    snprintf(output_filename, strlen(options.output_prefix) + 15, "%s-%06u.ts", options.output_prefix, output_index++);
+    set_videochunk_filename(output_filename,options.output_prefix, output_index++);
+    //snprintf(output_filename, strlen(options.output_prefix) + 15, "%s-%06u.ts", options.output_prefix, output_index++);
     if (avio_open(&oc->pb, output_filename, URL_WRONLY) < 0) {
         fprintf(stderr, "Could not open '%s'\n", output_filename);
         exit(1);
@@ -603,7 +603,7 @@ fprintf(stderr,"Into segmenter 3\n");
             }
 	    */
 	    
-	    set_videochunk_filename(output_filename,options, output_index++);
+	    set_videochunk_filename(output_filename,options.output_prefix, output_index++);
             
 	    if (avio_open(&oc->pb, output_filename, URL_WRONLY) < 0) {
                 fprintf(stderr, "Could not open '%s'\n", output_filename);
