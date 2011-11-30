@@ -4,4 +4,15 @@ ATTention:
 'autoreconf -if' & './configure' links against keemotion/deps/ffmpeg_build
 This must be modified in Makefile before compilation!
 should link to gpl version of ffmpeg (with libx264) in /usr/local/
+In MAkefile:
+replace
+#FFMPEG_CFLAGS = -Ipath_to_project/deps/ffmpeg-build/include  
+#FFMPEG_LIBS = -Lpath_to_project/deps/ffmpeg-build/lib -lavformat -lavcodec -lavutil  
+with:
+FFMPEG_CFLAGS = -I/usr/local/include  
+FFMPEG_LIBS = -L/usr/local/lib -lavformat -lavcodec -lavutil
 
+replace
+#PKG_CONFIG_PATH = :path_to_project/deps/ffmpeg-build/lib/pkgconfig:path_to_project/deps/ffmpeg-build/lib/pkgconfig
+with:
+PKG_CONFIG_PATH = :/usr/local/lib/pkgconfig
