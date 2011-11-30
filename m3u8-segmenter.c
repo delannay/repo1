@@ -289,6 +289,7 @@ int main(int argc, char **argv)
     };
 
 
+    av_log_set_level(AV_LOG_QUIET);
 
     fprintf(stderr,"Starting m3u8-segmenter\n");
 
@@ -509,7 +510,6 @@ fprintf(stderr,"Into segmenter 3\n");
 
     counter=0;
 
-    //av_log_set_level(AV_LOG_DEBUG);
 
 
     do {
