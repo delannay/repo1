@@ -11,4 +11,3 @@ Some example command lines
     ffmpeg -loglevel quiet  -i big_buck_bunny.ogv -f mpegts - | \
         m3u8-segmenter -i - -d 10 -p tmp/big_buck_bunny -m tmp/big_buck.m3u8 -u http://inodes.org/bigbuck/
 
-## Note on Patches/Pull Requests
