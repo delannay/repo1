@@ -44,6 +44,7 @@ struct options_t {
     const char *url_prefix;
     const char *named_pipe_out;
     const char *named_pipe_in;
+  int format_filename;
     long num_segments;
 };
 
@@ -273,7 +274,7 @@ int main(int argc, char **argv)
     char *endptr;
     struct options_t options; // = {0};
 
-    static const char *optstring = "i:d:p:m:u:n:l:t:ovh?";
+    static const char *optstring = "i:d:p:m:u:n:l:t:f:ovh?";
 
     static const struct option longopts[] = {
         { "input",         required_argument, NULL, 'i' },
@@ -282,8 +283,9 @@ int main(int argc, char **argv)
         { "m3u8-file",     required_argument, NULL, 'm' },
         { "url-prefix",    required_argument, NULL, 'u' },
         { "num-segments",  required_argument, NULL, 'n' },
-        { "log",           optional_argument, NULL, 'l' },
-        { "init-ts",       optional_argument, NULL, 't' },
+        { "log",           required_argument, NULL, 'l' },
+        { "init-ts",       required_argument, NULL, 't' },
+        { "format-filename",required_argument,NULL, 'f' },
         { "help",          no_argument,       NULL, 'h' },
         { 0, 0, 0, 0 }
     };
@@ -350,6 +352,10 @@ int main(int argc, char **argv)
                 options.named_pipe_in = optarg;
 		mkfifo(options.named_pipe_in, 0666);
 		InitialTimestamp_pipe =fopen(options.named_pipe_in ,"r");
+                break;
+
+	case 'f':
+                options.format_filename = atoi(optarg);
                 break;
 
             case 'h':
@@ -558,8 +564,10 @@ fprintf(stderr,"Into segmenter 3\n");
 	  avio_flush(oc->pb);
             avio_close(oc->pb);
 
-	    rename_videochunk(output_filename,options,output_index-1,init_ts+prev_segment_time*1000,init_ts+segment_time*1000);
+	    if (options.format_filename==0)
+	      rename_videochunk(output_filename,options,output_index-1,init_ts+prev_segment_time*1000,init_ts+segment_time*1000);
 	    printf("%s\n",output_filename);
+	    fflush(stdout);
 
 	    if (logpipe)
 	      {
