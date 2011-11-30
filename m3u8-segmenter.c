@@ -145,7 +145,7 @@ int  rename_videochunk(char* output_filename,const struct options_t options, int
   duration=end-start;
 
   strncpy(old_name,output_filename,500);
-  snprintf(output_filename, strlen(options.output_prefix) + 100, "%s-%06u-#%lld.%03d#%lld.%03d.ts", options.output_prefix, output_index,(long long int)start/1000, (int)start%1000,(long long int)duration/1000,(int) duration%1000);
+  snprintf(output_filename, strlen(options.output_prefix) + 100, "%s-%06u-#%lld.%03lld#%lld.%03lld.ts", options.output_prefix, output_index,(long long int)start/1000, (long long int) (start%1000),(long long int)duration/1000,(long long int) (duration%1000));
  rename(old_name,output_filename);
 
  return 0;
