@@ -1,0 +1,56 @@
+.\"                                      Hey, EMACS: -*- nroff -*-
+.\" First parameter, NAME, should be all caps
+.\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
+.\" other parameters are allowed: see man(7), man(1)
+.TH M3U8\-SEGMENTER 1 "November 13, 2010"
+.\" Please adjust this date whenever revising the manpage.
+.\"
+.\" Some roff macros, for reference:
+.\" .nh        disable hyphenation
+.\" .hy        enable hyphenation
+.\" .ad l      left justify
+.\" .ad b      justify to both left and right margins
+.\" .nf        disable filling
+.\" .fi        enable filling
+.\" .br        insert line break
+.\" .sp <n>    insert n+1 empty lines
+.\" for manpage-specific macros, see man(7)
+.SH NAME
+m3u8\-segmenter \- Performs Apple HTTP Live Streaming segmentation
+.SH SYNOPSIS
+.B m3u8\-segmenter
+\-i <input MPEG-TS file> -d <segment duration in seconds> -p <output MPEG-TS file prefix> -m <output m3u8 index file> -u <http prefix>
+.SH DESCRIPTION
+Takes in an MPEG-TS stream from a tool like ffmpeg and breaks it up into
+multiple ts-segments suitable for http live streaming. The M3U8 stream
+descriptor is also generated.
+.PP
+\fBm3u8\-segmenter\fP is used to create file segments and an M3U8 index for Apple HTTP Live Streaming
+.SH OPTIONS
+.TP
+\-h, \-\-help
+display a short help text
+.TP
+\-i, \-\-input FILE
+the input file. Use \- to read from standard input.
+.TP
+\-d, \--duration SECONDS
+the length of each segment in seconds.
+.TP
+\-p, \-\-output\-prefix PREFIX
+the prefix for the TS segments. It will be appended with -1.ts, -2.ts etc
+.TP
+\-m, \-\-m3u8\-file FILE
+the M3U8 output filename
+.TP
+\-u, \-\-url\-prefix PREFIX
+the prefix for web address of segments, e.g. http://example.org/video/
+.TP
+\-n, \-\-num\-segment NUMBER
+the number of segments to keep on disk
+.SH EXAMPLE
+ffmpeg \-loglevel quiet  \-i big\_buck\_bunny.ogv \-f mpegts \- | ../m3u8-segmenter \-i \- \-d 10 \-p tmp/big\_buck\_bunny \-m tmp/big_buck.m3u8 \-u http://inodes.org/bigbuck/
+.br
+.SH AUTHOR
+m3u8\-segmenter was written by Chase Douglas and is now maintained by John Ferlito.
+.PP

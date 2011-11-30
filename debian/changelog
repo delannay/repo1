@@ -1,0 +1,23 @@
+m3u8-segmenter (0.3-1) lucid; urgency=low
+
+  * New upstream release.
+
+ -- John Francesco Ferlito <johnf@inodes.org>  Sat, 25 Jun 2011 22:01:04 +1000
+
+m3u8-segmenter (0.1~svn50-3) lucid; urgency=low
+
+  * Add libavformat-dev as a build-dep
+
+ -- John Francesco Ferlito <johnf@inodes.org>  Mon, 13 Dec 2010 18:11:44 +1100
+
+m3u8-segmenter (0.1~svn50-2) lucid; urgency=low
+
+  * Add patch to make sure ENDLIST is always written.
+
+ -- John Francesco Ferlito <johnf@inodes.org>  Thu, 25 Nov 2010 18:39:26 +1100
+
+m3u8-segmenter (0.1~svn50-1) lucid; urgency=low
+
+  * Initial release (Closes: #1234)
+
+ -- John Francesco Ferlito <johnf@inodes.org>  Sat, 13 Nov 2010 20:08:28 +1100

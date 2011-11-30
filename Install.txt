@@ -1,0 +1,7 @@
+
+
+ATTention:
+'autoreconf -if' & './configure' links against keemotion/deps/ffmpeg_build
+This must be modified in Makefile before compilation!
+should link to gpl version of ffmpeg (with libx264) in /usr/local/
+
