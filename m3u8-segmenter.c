@@ -145,7 +145,7 @@ int  rename_videochunk(char* output_filename,const struct options_t options, int
   duration=end-start;
 
   strncpy(old_name,output_filename,500);
-  snprintf(output_filename, strlen(options.output_prefix) + 100, "%s-%06u-#%lld.%03lld#%lld.%03lld.ts", options.output_prefix, output_index,(long long int)start/1000, (long long int) (start%1000),(long long int)duration/1000,(long long int) (duration%1000));
+  snprintf(output_filename, strlen(options.output_prefix) + 100, "%s-%06u-#%lld.%03lld#%lld.%03lld.ts", options.output_prefix, output_index,(long long int)duration/1000,(long long int) (duration%1000),(long long int)start/1000, (long long int) (start%1000));
  rename(old_name,output_filename);
 
  return 0;
@@ -290,7 +290,7 @@ int main(int argc, char **argv)
 
 
 
-    printf("Starting m3u8-segmenter\n");
+    fprintf(stderr,"Starting m3u8-segmenter\n");
 
     memset(&options, 0 ,sizeof(options));
 
@@ -357,7 +357,7 @@ int main(int argc, char **argv)
         }
     } while (opt != -1);
 
-    printf("Starting m3u8-segmenter bef net_init\n");
+    fprintf(stderr,"Starting m3u8-segmenter bef net_init\n");
 
     avformat_network_init();
 
@@ -420,7 +420,7 @@ fprintf(stderr,"Into segmenter 2\n");
     if (InitialTimestamp_pipe!=NULL)
       {
         ret=fread(&init_ts,sizeof(int64_t),1,InitialTimestamp_pipe);
-	printf("Initial TS read : %lld\n",(long long int)init_ts);
+	fprintf(stderr,"Initial TS read : %lld\n",(long long int)init_ts);
       }
     
 
@@ -559,6 +559,7 @@ fprintf(stderr,"Into segmenter 3\n");
             avio_close(oc->pb);
 
 	    rename_videochunk(output_filename,options,output_index-1,init_ts+prev_segment_time*1000,init_ts+segment_time*1000);
+	    printf("%s\n",output_filename);
 
 	    if (logpipe)
 	      {
